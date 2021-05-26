@@ -1,0 +1,14 @@
+<message>
+    <metadata>
+        <msg_id>1</msg_id>
+        <client_type>type1</client_type>
+    </metadata>
+    <individual>
+        <name>John</name>
+        <surname>Smith</surname>
+        <additional_information>
+            <e_mail>aaa@gmail.com</e_mail>
+            <phone_number>11110000</phone_number>
+        </additional_information>
+    </individual>
+</message>
