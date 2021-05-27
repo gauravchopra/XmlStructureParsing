@@ -1,5 +1,6 @@
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -7,35 +8,63 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.*;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class XmlTransformer {
 
      
 
-    public static  void  main(String... args) throws XPathExpressionException, IOException, SAXException, ParserConfigurationException {
-        File file = new File("src/file.xml");
-        Map<String, String> attributes1 = new HashMap<>();
-        extracted(file, attributes1);
-        System.out.println(attributes1);
+    public static  void  main(String... args) throws XPathExpressionException, IOException, SAXException, ParserConfigurationException, TransformerException {
 
-        File file1 = new File("src/file1.xml");
-        Map<String, String> attributes2 = new HashMap<>();
-        extracted(file1, attributes2);
-        System.out.println(attributes2);
-
-        System.out.println("Difference in xmls::"+areEqualKeyValues(attributes2,attributes1));
+        Source inputXml1 = new StreamSource(new File("src/file.xml"));
+        Map<String, String> attributes1 = getStringStringMap(inputXml1);
+        Source inputXml2 = new StreamSource(new File("src/file1.xml"));
+        Map<String, String> attributes2 = getStringStringMap(inputXml2);
 
 
+        MapDifference<String,String> stringMapDifference= Maps.difference(attributes1,attributes2);
 
+        Map<String, MapDifference.ValueDifference<String>> valuesChanged = stringMapDifference.entriesDiffering();
+        System.out.println("Tags Values Changed::"+valuesChanged);
+
+        System.out.println("Tags Deleted::"+stringMapDifference.entriesOnlyOnLeft());
+
+        System.out.println("Tags Added::"+stringMapDifference.entriesOnlyOnRight());
+    }
+
+    private static Map<String, String> getStringStringMap(Source inputXml) throws TransformerException, UnsupportedEncodingException {
+        Source streamSource=new StreamSource(new File("src/transform.xslt"));
+        TransformerFactory transformerFactory=TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer(streamSource);
+
+
+        StreamResult standardResult = new StreamResult(new ByteArrayOutputStream());
+        transformer.transform(inputXml, standardResult);
+
+        String outputTags=((ByteArrayOutputStream) standardResult.getOutputStream()).toString("UTF-8");
+        String[] arrString=outputTags.split("\\n");
+
+        Map<String, String> attributes = new TreeMap<>();
+        Arrays.stream(arrString).forEach(attrib ->{
+            String [] tagValue=attrib.split("=");
+            attributes.put(tagValue[0],tagValue[1]);
+        });
+        return attributes;
     }
 
     private static Map<String, Boolean> areEqualKeyValues(Map<String, String> first, Map<String, String> second) {
@@ -44,28 +73,4 @@ public class XmlTransformer {
                         e -> !e.getValue().equals(second.get(e.getKey()))));
     }
 
-    private static void extracted(File file, Map<String, String> attributes1) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
-        XPath xPath =  XPathFactory.newInstance().newXPath();
-        String expression = "//*[not(*)]";
-
-        DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = builderFactory.newDocumentBuilder();
-        Document document = builder.parse(file);
-        document.getDocumentElement().normalize();
-
-        NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(document, XPathConstants.NODESET);
-        for(int i = 0 ; i < nodeList.getLength(); i++) {
-            attributes1.put(getXPath(nodeList.item(i)),nodeList.item(i).getFirstChild().getNodeValue());
-
-
-        }
-    }
-
-    private static String getXPath(Node node) {
-        Node parent = node.getParentNode();
-        if (parent == null) {
-            return node.getNodeName();
-        }
-        return getXPath(parent) + "/" + node.getNodeName();
-    }
 }

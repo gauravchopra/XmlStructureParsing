@@ -11,4 +11,14 @@
             <phone_number>11110000</phone_number>
         </additional_information>
     </individual>
+
+    <individual>
+        <name>MAx</name>
+        <surname>Mix</surname>
+        <additional_information>
+            <e_mail>aasdsaaa@gmail.com</e_mail>
+            <phone_number>1sdds1110001</phone_number>
+            <newTag>Main bhi hoon na</newTag>
+        </additional_information>
+    </individual>
 </message>
